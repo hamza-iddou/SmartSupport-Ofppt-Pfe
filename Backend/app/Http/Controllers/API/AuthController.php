@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -45,7 +47,6 @@ class AuthController extends Controller
             ]);
 
     } catch(Exception $e){
-        // Log the error internally
         Log::error('Login error: ' . $e->getMessage());
         
         return response()->json([
@@ -54,4 +55,36 @@ class AuthController extends Controller
         ], 500);
     }      
 }
+
+public function register(Request $request){
+    $rules = [
+        'name' => 'string|min:3|max:255|required',
+        'last_name' => 'string|min:3|max:255|required',
+        'email' => 'string|email|unique:users|max:255',
+        'password' => 'min:8|max:30|string'
+    ];
+
+    $validor = Validator::make($request->all(), $rules);
+    if($validor->fails()){
+        return response()->json(["errors" => $validor->errors()]);
+    }
+
+    $user = User::create([
+        'email'=>$request->email,
+        'name' => $request->name,
+        'last_name'=> $request->last_name,
+        'password' => Hash::make($request->password),
+        'is_email_verified' => false
+    ]);
+
+    if($user){
+        return response()->json(["success" => true, "msg" => "user has been succesfuly created pleas login"]);
+    }
+    
+    return response()->json(["msg" => "error"]);
+    
+
+}
+
+
 }
