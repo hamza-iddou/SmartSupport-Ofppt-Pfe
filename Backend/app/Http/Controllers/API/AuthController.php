@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -82,9 +86,88 @@ public function register(Request $request){
     }
     
     return response()->json(["msg" => "error"]);
-    
-
 }
+
+public function logout(Request $request){
+    try {
+       
+        $token = JWTAuth::parseToken()->getToken();
+        
+        if(!$token) {
+            return response()->json([
+                "success" => false,
+                "msg" => "Token not provided"
+            ], 400);
+        }
+
+       
+        JWTAuth::invalidate($token);
+        
+        return response()->json([
+            "success" => true,
+            "msg" => "Successfully logged out"
+        ]);
+
+    } catch (TokenExpiredException $e) {
+        
+        return response()->json([
+            "success" => true,
+            "msg" => "Already logged out (token expired)"
+        ]);
+        
+    } catch (JWTException $e) {
+        return response()->json([
+            "success" => false,
+            "msg" => "Failed to logout"
+        ], 500);
+    }
+}
+
+public function refresh(Request $request){
+    try {
+       
+        $token = $request->token ?? JWTAuth::parseToken()->getToken();
+        
+        if(!$token) {
+            return response()->json([
+                "success" => false,
+                "msg" => "Token not provided"
+            ], 400);
+        }
+
+        
+        $new_token = JWTAuth::refresh($token);
+        
+        
+        $user = Auth::guard('api')->user();
+        
+        return response()->json([
+            "success" => true,
+            "user" => $user,
+            "token" => $new_token,
+            "token_type" => "bearer"
+        ]);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json([
+            "success" => false,
+            "msg" => "Token expired, please login again"
+        ], 401);
+        
+    } catch (TokenInvalidException $e) {
+        return response()->json([
+            "success" => false,
+            "msg" => "Invalid token"
+        ], 401);
+        
+    } catch (JWTException $e) {
+        return response()->json([
+            "success" => false,
+            "msg" => "Could not refresh token"
+        ], 500);
+    }
+}
+
 
 
 }
