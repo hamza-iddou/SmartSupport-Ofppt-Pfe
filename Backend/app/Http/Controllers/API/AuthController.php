@@ -28,7 +28,7 @@ class AuthController extends Controller
             $token = Auth::guard('api')->attempt($credentials);
 
             if(!$token){
-                return response()->json(["msg"=>"error"]);
+                return response()->json(["msg"=>"token its not avaible"]);
             }
             $user = Auth::guard("api")->user();
             $user->token = $token;
