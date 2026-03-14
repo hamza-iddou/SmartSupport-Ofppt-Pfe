@@ -19,3 +19,4 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');        
     });
 });
+
