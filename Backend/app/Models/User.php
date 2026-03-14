@@ -54,4 +54,23 @@ class User extends Authenticatable implements JWTSubject
     {
         $this->attributes['password'] = bcrypt($value);
     }
+
+     public function workspaces()
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_members', 'user_id', 'workspace_id')
+                    ->withPivot('is_admin')  
+                    ->withTimestamps();      
+    }
+
+    public function adminWorkspaces()
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_members', 'user_id', 'workspace_id')
+                    ->wherePivot('is_admin', true);
+    }
+
+     public function createdWorkspaces()
+    {
+        return $this->hasMany(Workspace::class, 'created_by');
+    }
+
 }

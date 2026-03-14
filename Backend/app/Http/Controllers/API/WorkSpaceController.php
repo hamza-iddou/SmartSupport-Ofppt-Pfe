@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Workspace;
 use Exception;
 use Illuminate\Http\Request;
@@ -17,10 +18,8 @@ class WorkSpaceController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $id = $user->id;
-
-            // if($user){
-            //     $workspaces = Workspace::where()
-            // }
+            $user2 = User::find($id);
+            dd($user, $user2);
 
 
         }catch(Exception $e){

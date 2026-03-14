@@ -8,10 +8,35 @@ use Illuminate\Database\Eloquent\Model;
 class Workspace extends Model
 {
     use HasFactory;
-    protected $table = 'workspaces'; 
+    protected $table = 'workspaces';
 
     protected $fillable = [
         'name',
-        'image'
+        'image',
+        'created_by'
     ];
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'workspace_members', 'workspace_id', 'user_id')
+            ->withPivot('is_admin')
+            ->withTimestamps();
+    }
+
+     public function admins()
+    {
+        return $this->belongsToMany(User::class, 'workspace_members', 'workspace_id', 'user_id')
+                    ->wherePivot('is_admin', true);
+    }
+
+    public function regularMembers()
+    {
+        return $this->belongsToMany(User::class, 'workspace_members', 'workspace_id', 'user_id')
+                    ->wherePivot('is_admin', false);
+    }
+
+     public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
