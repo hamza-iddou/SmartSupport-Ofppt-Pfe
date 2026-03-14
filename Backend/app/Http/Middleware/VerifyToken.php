@@ -24,6 +24,7 @@ class VerifyToken
     {
         try{
             $user = JWTAuth::parsetoken()->authenticate();
+            
             if($user){
                 return $next($request);
             }            

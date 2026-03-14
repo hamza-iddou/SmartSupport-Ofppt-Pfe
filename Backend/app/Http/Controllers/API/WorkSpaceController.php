@@ -17,9 +17,12 @@ class WorkSpaceController extends Controller
     {
         try{
             $user = JWTAuth::parseToken()->authenticate();
-            $id = $user->id;
-            $user2 = User::find($id);
-            dd($user, $user2);
+            dd($user);
+
+            
+            
+
+            
 
 
         }catch(Exception $e){
