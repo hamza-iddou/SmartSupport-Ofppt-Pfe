@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
-
+use App\Http\Controllers\API\WorkSpaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,14 +16,10 @@ Route::group(['namespace' => 'API'], function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::group(["middleware" => "verify.token"], function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');        
+        Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
     });
 });
 
-Route::group(['middleware'=>'verify.token'], function(){
-
-     Route::groupe(['prefix' => 'WorkSpace'], function(){
-        //  Route::post('/', []);
-    });
-
+Route::group(['middleware' => 'verify.token'], function () {
+    Route::resource('/WorkSpaces', WorkSpaceController::class);
 });
