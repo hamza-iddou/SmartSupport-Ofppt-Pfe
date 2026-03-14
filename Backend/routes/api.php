@@ -20,3 +20,10 @@ Route::group(['namespace' => 'API'], function () {
     });
 });
 
+Route::group(['middleware'=>'verify.token'], function(){
+
+     Route::groupe(['prefix' => 'WorkSpace'], function(){
+        //  Route::post('/', []);
+    });
+
+});
