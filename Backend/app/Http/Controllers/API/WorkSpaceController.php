@@ -13,61 +13,63 @@ class WorkSpaceController extends Controller
 {
     
     
-    public function index(Request $request)
+    public function index()
     {
-        try{
+        
             $user = JWTAuth::user();
-            dd($user);
-
+            $workSpaces = $user->workspaces;
+            dd($workSpaces);
+            
+            
             
             
 
             
+            
 
+            
 
-        }catch(Exception $e){
-             return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access'
-            ], 401);
-        }
 
         
-    }
+             
+        }
+
+    
+    
 
    
     public function create()
     {
-        //
+        
     }
 
     
     public function store(Request $request)
     {
-        //
+       
     }
 
    
     public function show($id)
     {
-        //
+        
     }
 
    
     public function edit($id)
     {
-        //
+       
     }
 
     
     public function update(Request $request, $id)
     {
-        //
+       
     }
 
    
     public function destroy($id)
     {
-        //
+        
     }
 }
