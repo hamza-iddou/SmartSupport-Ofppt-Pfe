@@ -13,10 +13,10 @@ class WorkSpaceController extends Controller
 {
     
     
-    public function index()
+    public function index(Request $request)
     {
         try{
-            $user = JWTAuth::parseToken()->authenticate();
+            $user = JWTAuth::user();
             dd($user);
 
             
