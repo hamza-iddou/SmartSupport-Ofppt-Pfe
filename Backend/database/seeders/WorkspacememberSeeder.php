@@ -11,21 +11,47 @@ class WorkspaceMemberSeeder extends Seeder
 {
     public function run()
     {
-        \App\Models\WorkspaceMember::factory(20)->create();
-        
-        $workspaces = Workspace::all();
         $users = User::all();
+        $workspaces = Workspace::all();
         
-        foreach($workspaces as $workspace) {
-            $randomUsers = $users->random(rand(3, 5));
-            
-            foreach($randomUsers as $user) {
-                \App\Models\WorkspaceMember::create([
+        if ($users->isEmpty() || $workspaces->isEmpty()) {
+            $this->command->error('Users or workspaces missing!');
+            return;
+        }
+        
+        $this->command->info('Adding members to workspaces...');
+        
+        foreach ($workspaces as $workspace) {
+           
+            WorkspaceMember::firstOrCreate(
+                [
                     'workspace_id' => $workspace->id,
-                    'user_id' => $user->id,
-                    'is_admin' => rand(0, 100) < 30 // 30% chance admin
-                ]);
+                    'user_id' => $workspace->created_by
+                ],
+                [
+                    'is_admin' => true
+                ]
+            );
+            
+           
+            $availableUsers = $users->where('id', '!=', $workspace->created_by);
+            $memberCount = rand(3, min(7, $availableUsers->count()));
+            
+            $randomUsers = $availableUsers->random($memberCount);
+            
+            foreach ($randomUsers as $user) {
+                WorkspaceMember::firstOrCreate(
+                    [
+                        'workspace_id' => $workspace->id,
+                        'user_id' => $user->id
+                    ],
+                    [
+                        'is_admin' => fake()->boolean(20) 
+                    ]
+                );
             }
         }
+        
+        $this->command->info('Workspace members added successfully!');
     }
 }
