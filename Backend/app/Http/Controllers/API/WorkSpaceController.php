@@ -11,28 +11,16 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class WorkSpaceController extends Controller
 {
-    
-    
     public function index()
     {
+        $user = JWTAuth::user();
+        $workSpaces = $user->workspaces;
         
-            $user = JWTAuth::user();
-            $workSpaces = $user->workspaces;
-            dd($workSpaces);
-            
-            
-            
-            
-
-            
-            
-
-            
-
-
-        
-             
-        }
+        return response()->json([
+            'success' => true,
+            'workspaces' => $workSpaces
+        ]);
+    }
 
     
     

@@ -68,16 +68,16 @@ public function register(Request $request){
         'password' => 'min:8|max:30|string'
     ];
 
-    $validor = Validator::make($request->all(), $rules);
-    if($validor->fails()){
-        return response()->json(["errors" => $validor->errors()]);
+    $validator = Validator::make($request->all(), $rules);
+    if($validator->fails()){
+        return response()->json(["errors" => $validator->errors()], 422);
     }
 
     $user = User::create([
         'email'=>$request->email,
         'name' => $request->name,
         'last_name'=> $request->last_name,
-        'password' => Hash::make($request->password),
+        'password' => $request->password,
         'is_email_verified' => false
     ]);
 

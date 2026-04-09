@@ -15,10 +15,10 @@ class UserSeeder extends Seeder
         
         
         User::factory()->create([
-            'name' => 'Test',
-            'last_name' => 'User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password123')
+            'name' => 'hamza',
+            'last_name' => 'iddou',
+            'email' => 'hamzaiddou@gmail.com',
+            'password' => 'password123' // The User model will hash this automatically
         ]);
         
         $this->command->info('Created 25 users');
