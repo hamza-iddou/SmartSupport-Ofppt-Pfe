@@ -58,8 +58,7 @@ class User extends Authenticatable implements JWTSubject
      public function workspaces()
     {
         return $this->belongsToMany(Workspace::class, 'workspace_members', 'user_id', 'workspace_id')
-                    ->withPivot('is_admin')  
-                    ->withTimestamps();      
+                    ->withPivot('is_admin');      
     }
 
     public function adminWorkspaces()

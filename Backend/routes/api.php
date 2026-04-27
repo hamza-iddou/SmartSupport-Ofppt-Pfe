@@ -13,5 +13,5 @@ Route::group(['middleware' => 'verify.token'], function () {
     Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
     
    
-    Route::apiResource('workspaces', WorkSpaceController::class);
+    Route::apiResource('/workspaces', WorkSpaceController::class);
 });
