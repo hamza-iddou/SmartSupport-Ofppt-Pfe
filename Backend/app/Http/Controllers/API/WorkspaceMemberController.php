@@ -13,6 +13,46 @@ use Illuminate\Support\Facades\Validator;
 class WorkspaceMemberController extends Controller
 {
     /**
+     * List all members of the workspace
+     */
+    public function index($workspaceId)
+    {
+        try {
+            $currentUser = JWTAuth::user();
+
+            // Verify currentUser is a member of this workspace
+            $workspace = $currentUser->workspaces()->where('workspaces.id', $workspaceId)->first();
+
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace not found or you are not a member'
+                ], 404);
+            }
+
+            $members = $workspace->members()->get(['users.id', 'users.name', 'users.last_name', 'users.email']);
+            
+            // Map pivot data for clarity
+            $members->map(function($user) {
+                $user->is_admin = $user->pivot->is_admin;
+                unset($user->pivot);
+                return $user;
+            });
+
+            return response()->json([
+                'success' => true,
+                'members' => $members
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch members: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Invite a user to the workspace
      */
     public function store(Request $request, $workspaceId)
@@ -96,12 +136,15 @@ class WorkspaceMemberController extends Controller
                 ], 404);
             }
 
-            // 2. Prevent the user from removing their own admin status by accident
+            // 2. Prevent the user from removing their own admin status if they are the ONLY admin
             if ($currentUser->id == $userId && $request->input('is_admin') == false) {
-                 return response()->json([
-                    'success' => false,
-                    'message' => 'You cannot remove your own admin privileges.'
-                ], 403);
+                 $adminCount = $workspace->admins()->count();
+                 if ($adminCount <= 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You cannot remove your own admin privileges because you are the only admin. Promote someone else first.'
+                    ], 403);
+                 }
             }
 
             $validator = Validator::make($request->all(), [
@@ -158,13 +201,25 @@ class WorkspaceMemberController extends Controller
                 ], 404);
             }
             
-            // Prevent removing yourself
+            // Prevent removing yourself (use the leave method instead)
             if ($currentUser->id == $userId) {
                 return response()->json([
                    'success' => false,
-                   'message' => 'You cannot kick yourself from the workspace.'
+                   'message' => 'Use the leave endpoint to remove yourself from the workspace.'
                ], 403);
            }
+
+            // Check if target user is an admin and if they are the only admin
+            $targetUser = $workspace->members()->where('user_id', $userId)->first();
+            if ($targetUser && $targetUser->pivot->is_admin) {
+                $adminCount = $workspace->admins()->count();
+                if ($adminCount <= 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot remove the only admin. Promote someone else first.'
+                    ], 403);
+                }
+            }
 
             // Target user check
             if (!$workspace->members()->where('user_id', $userId)->exists()) {
@@ -186,6 +241,49 @@ class WorkspaceMemberController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to remove user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Allow a user to leave the workspace
+     */
+    public function leave($workspaceId)
+    {
+        try {
+            $currentUser = JWTAuth::user();
+
+            $workspace = $currentUser->workspaces()->where('workspaces.id', $workspaceId)->first();
+
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace not found or you are not a member'
+                ], 404);
+            }
+
+            // If the user is an admin, check if they are the last admin
+            if ($workspace->pivot->is_admin) {
+                $adminCount = $workspace->admins()->count();
+                if ($adminCount <= 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You are the only admin. You must promote someone else or delete the workspace before leaving.'
+                    ], 403);
+                }
+            }
+
+            $workspace->members()->detach($currentUser->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'You have left the workspace'
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to leave workspace: ' . $e->getMessage()
             ], 500);
         }
     }

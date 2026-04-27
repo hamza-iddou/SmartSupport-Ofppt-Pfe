@@ -18,7 +18,9 @@ Route::group(['middleware' => 'verify.token'], function () {
     Route::apiResource('/workspaces', WorkSpaceController::class);
     
     // Workspace Members Management
+    Route::get('/workspaces/{workspace}/members', [WorkspaceMemberController::class, 'index']);
     Route::post('/workspaces/{workspace}/members', [WorkspaceMemberController::class, 'store']);
     Route::put('/workspaces/{workspace}/members/{user}', [WorkspaceMemberController::class, 'update']);
     Route::delete('/workspaces/{workspace}/members/{user}', [WorkspaceMemberController::class, 'destroy']);
+    Route::post('/workspaces/{workspace}/leave', [WorkspaceMemberController::class, 'leave']);
 });
