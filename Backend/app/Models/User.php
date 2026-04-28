@@ -67,9 +67,18 @@ class User extends Authenticatable implements JWTSubject
                     ->wherePivot('is_admin', true);
     }
 
-     public function createdWorkspaces()
+    public function createdWorkspaces()
     {
         return $this->hasMany(Workspace::class, 'created_by');
     }
 
+    public function createdTickets()
+    {
+        return $this->hasMany(Ticket::class, 'created_by');
+    }
+
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'assigned_to');
+    }
 }
