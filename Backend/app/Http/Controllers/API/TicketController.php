@@ -10,8 +10,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
+use App\Services\GeminiService;
+
 class TicketController extends Controller
 {
+    protected $gemini;
+
+    public function __construct(GeminiService $gemini)
+    {
+        $this->gemini = $gemini;
+    }
+
     /**
      * Display a listing of tickets for a specific workspace.
      */
@@ -98,18 +107,23 @@ class TicketController extends Controller
                 }
             }
 
+            // Call AI Analysis
+            $aiAnalysis = $this->gemini->analyzeTicket($request->title, $request->description);
+
             $ticket = Ticket::create([
                 'workspace_id' => $workspaceId,
                 'created_by' => $user->id,
                 'assigned_to' => $request->assigned_to,
                 'title' => $request->title,
                 'description' => $request->description,
-                'status' => 'pending'
+                'status' => 'pending',
+                'ai_summary' => $aiAnalysis['summary'],
+                'ai_suggestion' => $aiAnalysis['suggestion']
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ticket created successfully',
+                'message' => 'Ticket created successfully with AI analysis',
                 'ticket' => $ticket
             ], 201);
 
