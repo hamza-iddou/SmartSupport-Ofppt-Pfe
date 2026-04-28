@@ -15,9 +15,15 @@ class Ticket extends Model
         'assigned_to',
         'title',
         'description',
+        'category',
         'status',
         'ai_summary',
         'ai_suggestion',
+        'resolved_at',
+    ];
+
+    protected $casts = [
+        'resolved_at' => 'datetime',
     ];
 
     public function workspace()
@@ -33,5 +39,10 @@ class Ticket extends Model
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(TicketLog::class);
     }
 }

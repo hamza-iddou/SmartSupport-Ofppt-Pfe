@@ -4,13 +4,14 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
+use App\Models\TicketLog;
 use App\Models\Workspace;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
 use App\Services\GeminiService;
+use Carbon\Carbon;
 
 class TicketController extends Controller
 {
@@ -24,7 +25,7 @@ class TicketController extends Controller
     /**
      * Display a listing of tickets for a specific workspace.
      */
-    public function index($workspaceId)
+    public function index(Request $request, $workspaceId)
     {
         try {
             $user = JWTAuth::user();
@@ -41,13 +42,25 @@ class TicketController extends Controller
 
             $isAdmin = $workspace->pivot->is_admin;
 
+            $query = Ticket::where('workspace_id', $workspaceId);
+
+            // Filtering
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+            if ($request->has('assigned_to')) {
+                $query->where('assigned_to', $request->assigned_to);
+            }
+            if ($request->has('category')) {
+                $query->where('category', 'like', '%' . $request->category . '%');
+            }
+
             if ($isAdmin) {
-                // Admin can see all tickets in the workspace
-                $tickets = Ticket::where('workspace_id', $workspaceId)->with(['creator', 'assignee'])->get();
+                // Admin can see all filtered tickets in the workspace
+                $tickets = $query->with(['creator', 'assignee'])->get();
             } else {
-                // Regular member can only see tickets they created
-                $tickets = Ticket::where('workspace_id', $workspaceId)
-                    ->where('created_by', $user->id)
+                // Regular member can only see tickets they created (with filters)
+                $tickets = $query->where('created_by', $user->id)
                     ->with(['creator', 'assignee'])
                     ->get();
             }
@@ -116,9 +129,18 @@ class TicketController extends Controller
                 'assigned_to' => $request->assigned_to,
                 'title' => $request->title,
                 'description' => $request->description,
+                'category' => $aiAnalysis['category'],
                 'status' => 'pending',
                 'ai_summary' => $aiAnalysis['summary'],
                 'ai_suggestion' => $aiAnalysis['suggestion']
+            ]);
+
+            // Log initial creation
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $user->id,
+                'action' => 'Ticket Created',
+                'details' => "Ticket created with status pending and category: {$ticket->category}"
             ]);
 
             return response()->json([
@@ -188,20 +210,37 @@ class TicketController extends Controller
     }
 
     /**
-     * Update the ticket status (Admins only).
+     * Update the ticket status.
      */
     public function updateStatus(Request $request, $workspaceId, $ticketId)
     {
         try {
             $user = JWTAuth::user();
 
-            // Verify currentUser is an Admin of this workspace
-            $workspace = $user->adminWorkspaces()->where('workspaces.id', $workspaceId)->first();
+            $workspace = $user->workspaces()->where('workspaces.id', $workspaceId)->first();
 
             if (!$workspace) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized or not an admin of this workspace'
+                    'message' => 'Workspace not found or unauthorized'
+                ], 404);
+            }
+
+            $isAdmin = $workspace->pivot->is_admin;
+            $ticket = Ticket::where('workspace_id', $workspaceId)->where('id', $ticketId)->first();
+
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket not found'
+                ], 404);
+            }
+
+            // Authorization: Admin or Assigned User can update status
+            if (!$isAdmin && $ticket->assigned_to !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only admins or the assigned user can update the status'
                 ], 403);
             }
 
@@ -216,16 +255,25 @@ class TicketController extends Controller
                 ], 422);
             }
 
-            $ticket = Ticket::where('workspace_id', $workspaceId)->where('id', $ticketId)->first();
+            $oldStatus = $ticket->status;
+            $newStatus = $request->status;
 
-            if (!$ticket) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ticket not found'
-                ], 404);
+            $updateData = ['status' => $newStatus];
+
+            // If resolving, set resolved_at
+            if ($newStatus === 'resolved' && $oldStatus !== 'resolved') {
+                $updateData['resolved_at'] = now();
             }
 
-            $ticket->update(['status' => $request->status]);
+            $ticket->update($updateData);
+
+            // Log change
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $user->id,
+                'action' => 'Status Changed',
+                'details' => "Status changed from {$oldStatus} to {$newStatus}"
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -237,6 +285,118 @@ class TicketController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update ticket status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign ticket to a member (Admin only).
+     */
+    public function assign(Request $request, $workspaceId, $ticketId)
+    {
+        try {
+            $user = JWTAuth::user();
+
+            // Verify currentUser is an Admin
+            $workspace = $user->adminWorkspaces()->where('workspaces.id', $workspaceId)->first();
+
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized or not an admin of this workspace'
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'assigned_to' => 'required|exists:users,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Verify target user belongs to the workspace
+            $isMember = $workspace->members()->where('users.id', $request->assigned_to)->exists();
+            if (!$isMember) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Assigned user is not a member of this workspace'
+                ], 422);
+            }
+
+            $ticket = Ticket::where('workspace_id', $workspaceId)->where('id', $ticketId)->first();
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket not found'
+                ], 404);
+            }
+
+            $oldAssigneeId = $ticket->assigned_to;
+            $ticket->update(['assigned_to' => $request->assigned_to]);
+
+            $newAssignee = $workspace->members()->where('users.id', $request->assigned_to)->first();
+
+            // Log assignment
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $user->id,
+                'action' => 'Ticket Assigned',
+                'details' => "Ticket assigned to {$newAssignee->name} ({$newAssignee->email})"
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ticket assigned successfully',
+                'ticket' => $ticket
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign ticket: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get logs for a specific ticket.
+     */
+    public function logs($workspaceId, $ticketId)
+    {
+        try {
+            $user = JWTAuth::user();
+
+            $workspace = $user->workspaces()->where('workspaces.id', $workspaceId)->first();
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace not found or unauthorized'
+                ], 404);
+            }
+
+            $ticket = Ticket::where('workspace_id', $workspaceId)->where('id', $ticketId)->first();
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket not found'
+                ], 404);
+            }
+
+            $logs = $ticket->logs()->with('user:id,name,email')->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'logs' => $logs
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch logs: ' . $e->getMessage()
             ], 500);
         }
     }

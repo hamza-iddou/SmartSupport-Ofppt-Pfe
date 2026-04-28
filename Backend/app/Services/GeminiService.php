@@ -50,11 +50,14 @@ class GeminiService
     }
 
     /**
-     * Analyze a ticket and return a summary and suggestion
+     * Analyze a ticket and return a summary, suggestion, and category
      */
     public function analyzeTicket($title, $description)
     {
-        $prompt = "You are an AI support assistant. Please analyze the following support ticket and return a JSON response with exactly two fields: 'summary' (a brief 1-sentence summary) and 'suggestion' (a practical next step for the support team). 
+        $prompt = "You are an AI support assistant. Please analyze the following support ticket and return a JSON response with exactly three fields: 
+        1. 'summary' (a brief 1-sentence summary)
+        2. 'suggestion' (a practical next step for the support team)
+        3. 'category' (a 1-2 word category like 'Network', 'Hardware', 'Software', 'Billing', etc.)
         
         Ticket Title: {$title}
         Ticket Description: {$description}
@@ -68,14 +71,15 @@ class GeminiService
             $cleanJson = preg_replace('/```json|```/', '', $response);
             $decoded = json_decode(trim($cleanJson), true);
 
-            if (isset($decoded['summary']) && isset($decoded['suggestion'])) {
+            if (isset($decoded['summary']) && isset($decoded['suggestion']) && isset($decoded['category'])) {
                 return $decoded;
             }
         }
 
         return [
             'summary' => 'AI was unable to generate a summary.',
-            'suggestion' => 'Please review the ticket manually.'
+            'suggestion' => 'Please review the ticket manually.',
+            'category' => 'Uncategorized'
         ];
     }
 }
