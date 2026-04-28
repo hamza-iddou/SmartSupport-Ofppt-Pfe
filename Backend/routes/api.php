@@ -31,4 +31,5 @@ Route::group(['middleware' => 'verify.token'], function () {
     Route::get('/workspaces/{workspace}/tickets/{ticket}', [TicketController::class, 'show']);
     // Only admins should use this, but authorization is handled in the controller
     Route::put('/workspaces/{workspace}/tickets/{ticket}/status', [TicketController::class, 'updateStatus']);
+    Route::delete('/workspaces/{workspace}/tickets/{ticket}', [TicketController::class, 'destroy']);
 });

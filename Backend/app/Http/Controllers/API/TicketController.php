@@ -219,10 +219,47 @@ class TicketController extends Controller
                 'ticket' => $ticket
             ]);
 
+        }
+    }
+
+    /**
+     * Remove the specified ticket (Admins only).
+     */
+    public function destroy($workspaceId, $ticketId)
+    {
+        try {
+            $user = JWTAuth::user();
+
+            // Verify currentUser is an Admin of this workspace
+            $workspace = $user->adminWorkspaces()->where('workspaces.id', $workspaceId)->first();
+
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized or not an admin of this workspace'
+                ], 403);
+            }
+
+            $ticket = Ticket::where('workspace_id', $workspaceId)->where('id', $ticketId)->first();
+
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket not found'
+                ], 404);
+            }
+
+            $ticket->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ticket deleted successfully'
+            ]);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update ticket status: ' . $e->getMessage()
+                'message' => 'Failed to delete ticket: ' . $e->getMessage()
             ], 500);
         }
     }
