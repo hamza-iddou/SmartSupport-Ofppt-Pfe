@@ -22,6 +22,8 @@ const Dashboard = () => {
     }
   }, [workspace]);
 
+
+  
   const fetchDashboardData = async () => {
     try {
       const [statsRes, ticketsRes] = await Promise.all([
