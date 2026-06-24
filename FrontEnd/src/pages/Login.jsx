@@ -19,7 +19,12 @@ const Login = () => {
       await login(email, password);
       navigate('/workspaces');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.data?.errors) {
+        const validationErrors = Object.values(err.response.data.errors).flat().join(' ');
+        setError(validationErrors);
+      } else {
+        setError(err.response?.data?.msg || err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
