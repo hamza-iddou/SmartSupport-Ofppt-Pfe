@@ -27,8 +27,8 @@ const CreateTicket = () => {
   const fetchMembers = async () => {
     try {
       const response = await api.get(`/workspaces/${workspace.id}/members`);
-      const data = Array.isArray(response.data) ? response.data : response.data.data || [];
-      setMembers(data);
+      const raw = response.data.members || response.data.data || response.data;
+      setMembers(Array.isArray(raw) ? raw : []);
     } catch (err) {
       console.error('Failed to fetch members', err);
     }

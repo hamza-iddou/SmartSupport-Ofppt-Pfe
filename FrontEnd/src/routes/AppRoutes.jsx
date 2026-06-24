@@ -46,8 +46,8 @@ const AppRoutes = () => {
       }>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tickets" element={<Tickets />} />
-        <Route path="/tickets/:id" element={<TicketDetails />} />
         <Route path="/tickets/new" element={<CreateTicket />} />
+        <Route path="/tickets/:id" element={<TicketDetails />} />
         <Route path="/members" element={<Members />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

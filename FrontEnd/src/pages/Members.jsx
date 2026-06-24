@@ -27,19 +27,8 @@ const Members = () => {
     try {
       setLoading(true);
       const response = await api.get(`/workspaces/${workspace.id}/members`);
-      console.log('Members API Response:', response.data);
-      
-      let data = [];
-      if (Array.isArray(response.data)) {
-        data = response.data;
-      } else if (response.data && Array.isArray(response.data.data)) {
-        data = response.data.data;
-      } else if (response.data && typeof response.data === 'object') {
-        const possibleArray = Object.values(response.data).find(val => Array.isArray(val));
-        if (possibleArray) data = possibleArray;
-      }
-      
-      setMembers(data);
+      const raw = response.data.members || response.data.data || response.data;
+      setMembers(Array.isArray(raw) ? raw : []);
     } catch (err) {
       console.error('Failed to fetch members', err);
     } finally {
@@ -58,7 +47,7 @@ const Members = () => {
       });
       console.log('Invite API Response:', response.data);
       setInviteEmail('');
-      setNotification({ type: 'success', message: 'Invitation sent successfully!' });
+      setNotification({ type: 'success', message: 'Member added to workspace!' });
       fetchMembers();
     } catch (err) {
       console.error('Invite failed:', err);
