@@ -4,7 +4,12 @@ import api from '../api/axios';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [workspace, setWorkspace] = useState(() => {
     const saved = localStorage.getItem('workspace');
@@ -17,19 +22,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      // In a real app, you might want to fetch the user profile here
-      // For now, we'll assume the token is valid if it exists
-      setLoading(false);
-    } else {
-      setLoading(false);
-    }
+    setLoading(false);
   }, [token]);
 
   const login = async (email, password) => {
     const response = await api.post('/login', { email, password });
     const { token, user } = response.data;
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     setToken(token);
     setUser(user);
     return response.data;
@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     const response = await api.post('/register', { name, last_name: lastName, email, password });
     const { token, user } = response.data;
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     setToken(token);
     setUser(user);
     return response.data;
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     }
     localStorage.removeItem('token');
     localStorage.removeItem('workspace');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     setWorkspace(null);
@@ -62,8 +64,11 @@ export const AuthProvider = ({ children }) => {
     setWorkspace(ws);
   };
 
+  // Helper: is the current user an admin of the selected workspace?
+  const isAdmin = workspace?.pivot?.is_admin === true || workspace?.pivot?.is_admin === 1;
+
   return (
-    <AuthContext.Provider value={{ user, token, workspace, loading, login, register, logout, selectWorkspace }}>
+    <AuthContext.Provider value={{ user, token, workspace, loading, login, register, logout, selectWorkspace, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
