@@ -13,7 +13,7 @@ import {
 import { useState } from 'react';
 
 const DashboardLayout = () => {
-  const { logout, workspace } = useAuth();
+  const { logout, workspace, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -125,7 +125,7 @@ const DashboardLayout = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex flex-col text-right">
-              <span className="text-sm font-bold text-gray-900">{workspace?.user_role || 'Admin'}</span>
+              <span className="text-sm font-bold text-gray-900">{isAdmin ? 'Admin' : 'Member'}</span>
               <span className="text-xs text-gray-500">Connected</span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center font-bold border border-gray-200">

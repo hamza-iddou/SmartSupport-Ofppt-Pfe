@@ -46,7 +46,7 @@ const Workspaces = () => {
     e.preventDefault();
     try {
       const response = await api.post('/workspaces', { name: newName });
-      const createdWorkspace = response.data.data || response.data;
+      const createdWorkspace = response.data.workspace || response.data.data || response.data;
       setWorkspaces([...workspaces, createdWorkspace]);
       setIsCreating(false);
       setNewName('');

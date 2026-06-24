@@ -259,10 +259,10 @@ const TicketDetails = () => {
                 <label className="text-xs font-bold text-gray-400 uppercase">Assignee</label>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                    {ticket.assigned_to?.name?.charAt(0) || <UserPlus size={20} />}
+                    {ticket.assignee?.name?.charAt(0) || <UserPlus size={20} />}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900">{ticket.assigned_to?.name || 'Unassigned'}</p>
+                    <p className="text-sm font-bold text-gray-900">{ticket.assignee?.name || 'Unassigned'}</p>
                     <button 
                       onClick={() => setShowAssignModal(!showAssignModal)}
                       className="text-xs text-blue-600 font-semibold hover:underline"
@@ -299,11 +299,11 @@ const TicketDetails = () => {
             <h3 className="font-bold text-gray-900 mb-4">Requestor</h3>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold uppercase">
-                {ticket.user?.name?.charAt(0)}
+                {ticket.creator?.name?.charAt(0) || '?'}
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">{ticket.user?.name}</p>
-                <p className="text-xs text-gray-500">{ticket.user?.email}</p>
+                <p className="text-sm font-bold text-gray-900">{ticket.creator?.name}</p>
+                <p className="text-xs text-gray-500">{ticket.creator?.email}</p>
               </div>
             </div>
           </div>

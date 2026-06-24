@@ -161,9 +161,9 @@ const Tickets = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-gray-200 text-[10px] flex items-center justify-center font-bold uppercase">
-                          {ticket.assigned_to?.name?.charAt(0) || '?'}
+                          {ticket.assignee?.name?.charAt(0) || '?'}
                         </div>
-                        <span className="text-sm text-gray-700">{ticket.assigned_to?.name || 'Unassigned'}</span>
+                        <span className="text-sm text-gray-700">{ticket.assignee?.name || 'Unassigned'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">

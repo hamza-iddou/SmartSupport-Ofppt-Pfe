@@ -30,9 +30,9 @@ const Dashboard = () => {
         api.get(`/workspaces/${workspace.id}/stats`),
         api.get(`/workspaces/${workspace.id}/tickets?limit=5`)
       ]);
-      setStats(statsRes.data);
+      setStats(statsRes.data.stats || statsRes.data);
       // Handle potential Laravel data wrapping
-      setRecentTickets(Array.isArray(ticketsRes.data) ? ticketsRes.data : ticketsRes.data.data || []);
+      setRecentTickets(Array.isArray(ticketsRes.data) ? ticketsRes.data : ticketsRes.data.data || ticketsRes.data.tickets || []);
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
     } finally {
@@ -135,7 +135,9 @@ const Dashboard = () => {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-gray-500 mb-1">Avg. Resolution Time</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.average_resolution_time || stats?.avg_resolution_time || '0h'}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats?.average_resolution_time_hours !== undefined ? `${stats.average_resolution_time_hours}h` : '0h'}
+              </p>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div className="h-full bg-blue-600" style={{ width: '65%' }}></div>

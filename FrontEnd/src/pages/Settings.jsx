@@ -16,7 +16,7 @@ const Settings = () => {
     setLoading(true);
     try {
       const response = await api.put(`/workspaces/${workspace.id}`, { name });
-      selectWorkspace({ ...workspace, name: response.data.name });
+      selectWorkspace({ ...workspace, name: response.data.workspace.name });
       alert('Workspace updated successfully');
     } catch (err) {
       alert('Failed to update workspace');

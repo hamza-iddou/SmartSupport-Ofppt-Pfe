@@ -54,7 +54,7 @@ const Members = () => {
     try {
       const response = await api.post(`/workspaces/${workspace.id}/members`, { 
         email: inviteEmail,
-        role: inviteRole 
+        is_admin: inviteRole === 'admin'
       });
       console.log('Invite API Response:', response.data);
       setInviteEmail('');
@@ -147,7 +147,7 @@ const Members = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700 capitalize">
                           <Shield size={14} className="text-gray-400" />
-                          {member.pivot?.role || 'Member'}
+                          {member.is_admin ? 'Admin' : 'Member'}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
