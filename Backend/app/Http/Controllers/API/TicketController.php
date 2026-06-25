@@ -59,10 +59,13 @@ class TicketController extends Controller
                 // Admin can see all filtered tickets in the workspace
                 $tickets = $query->with(['creator', 'assignee'])->get();
             } else {
-                // Regular member can only see tickets they created (with filters)
-                $tickets = $query->where('created_by', $user->id)
-                    ->with(['creator', 'assignee'])
-                    ->get();
+                // Regular member can see tickets they created OR are assigned to
+                $tickets = $query->where(function ($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->orWhere('assigned_to', $user->id);
+                })
+                ->with(['creator', 'assignee'])
+                ->get();
             }
 
             return response()->json([
@@ -189,7 +192,7 @@ class TicketController extends Controller
             }
 
             // Check if user is allowed to see this ticket
-            if (!$isAdmin && $ticket->created_by !== $user->id) {
+            if (!$isAdmin && $ticket->created_by !== $user->id && $ticket->assigned_to !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view this ticket'
@@ -439,6 +442,51 @@ class TicketController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete ticket: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get AI suggestion for a ticket (on-demand, before creation).
+     */
+    public function aiSuggest(Request $request, $workspaceId)
+    {
+        try {
+            $user = JWTAuth::user();
+
+            $workspace = $user->workspaces()->where('workspaces.id', $workspaceId)->first();
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace not found or unauthorized'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'title'       => 'required|string|max:255',
+                'description' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors'  => $validator->errors()
+                ], 422);
+            }
+
+            $aiAnalysis = $this->gemini->analyzeTicket($request->title, $request->description);
+
+            return response()->json([
+                'success'    => true,
+                'summary'    => $aiAnalysis['summary'],
+                'suggestion' => $aiAnalysis['suggestion'],
+                'category'   => $aiAnalysis['category'],
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI suggestion failed: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -35,4 +35,7 @@ Route::group(['middleware' => 'verify.token'], function () {
     Route::put('/workspaces/{workspace}/tickets/{ticket}/assign', [TicketController::class, 'assign']);
     Route::get('/workspaces/{workspace}/tickets/{ticket}/logs', [TicketController::class, 'logs']);
     Route::delete('/workspaces/{workspace}/tickets/{ticket}', [TicketController::class, 'destroy']);
+
+    // AI Suggestion (on-demand, before ticket creation)
+    Route::post('/workspaces/{workspace}/ai-suggest', [TicketController::class, 'aiSuggest']);
 });

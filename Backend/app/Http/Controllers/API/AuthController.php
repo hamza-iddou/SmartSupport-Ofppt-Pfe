@@ -64,8 +64,8 @@ public function register(Request $request){
     $rules = [
         'name' => 'string|min:3|max:255|required',
         'last_name' => 'string|min:3|max:255|required',
-        'email' => 'string|email|unique:users|max:255',
-        'password' => 'min:8|max:30|string'
+        'email' => 'required|string|email|unique:users|max:255',
+        'password' => 'required|min:8|max:30|string'
     ];
 
     $validator = Validator::make($request->all(), $rules);
@@ -82,10 +82,15 @@ public function register(Request $request){
     ]);
 
     if($user){
-        return response()->json(["success" => true, "msg" => "user has been succesfuly created pleas login"]);
+        $token = Auth::guard('api')->login($user);
+        return response()->json([
+            "success" => true,
+            "user" => $user,
+            "token" => $token,
+        ]);
     }
     
-    return response()->json(["msg" => "error"]);
+    return response()->json(["success" => false, "msg" => "Error creating user"], 500);
 }
 
 public function logout(Request $request){
